@@ -1,0 +1,6 @@
+
+{
+  "name": "OncoManager Morocco - Patient Module",
+  "description": "Full-stack module for managing oncology patients, including identity, medical history, and oncological data, tailored for the Moroccan healthcare context.",
+  "requestFramePermissions": []
+}
