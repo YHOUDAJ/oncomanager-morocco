@@ -1,1 +1,336 @@
-ˇÙ·ä»¨∂èÆ+&j«!zf¨yÀb¢wËÆÿ^=´bz{f°€•{ˇ»∂)‹ñÁ^≤ÿ^IÏ^jw
+// prisma/schema.prisma
+// OncoManager Morocco - Schema de base de donn√©es
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============ ENUMS ============
+
+enum Sexe {
+  HOMME
+  FEMME
+}
+
+enum GroupeSanguin {
+  A_POSITIF
+  A_NEGATIF
+  B_POSITIF
+  B_NEGATIF
+  AB_POSITIF
+  AB_NEGATIF
+  O_POSITIF
+  O_NEGATIF
+}
+
+enum Role {
+  MEDECIN
+  SECRETAIRE
+  INFIRMIER
+  ADMIN
+}
+
+enum StatutRdv {
+  PLANIFIE
+  CONFIRME
+  EN_COURS
+  TERMINE
+  ANNULE
+  ABSENT
+}
+
+enum TypeRdv {
+  CONSULTATION_INITIALE
+  CONSULTATION_SUIVI
+  CHIMIO
+  RADIOTHERAPIE
+  BILAN
+  TELECONSULTATION
+}
+
+enum StatutCure {
+  PLANIFIEE
+  EN_COURS
+  TERMINEE
+  REPORTEE
+  ANNULEE
+}
+
+// ============ MODELS ============
+
+model Cabinet {
+  id          String   @id @default(cuid())
+  nom         String
+  adresse     String?
+  ville       String?
+  telephone   String?
+  email       String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  users       User[]
+  patients    Patient[]
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  nom           String
+  prenom        String
+  role          Role     @default(MEDECIN)
+  passwordHash  String
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  cabinetId     String
+  cabinet       Cabinet  @relation(fields: [cabinetId], references: [id])
+  
+  patientsCreated    Patient[]      @relation("PatientCreatedBy")
+  consultations      Consultation[]
+  curesCreated       Cure[]
+}
+
+model Patient {
+  id                    String    @id @default(cuid())
+  
+  // Identit√©
+  nom                   String
+  prenom                String
+  dateNaissance         DateTime
+  sexe                  Sexe
+  cin                   String?   @unique
+  
+  // Contact
+  telephone             String
+  telephoneSecondaire   String?
+  email                 String?
+  adresse               String?
+  ville                 String?
+  
+  // Couverture m√©dicale
+  numeroCNSS            String?
+  mutuelle              String?
+  numeroMutuelle        String?
+  
+  // Informations m√©dicales g√©n√©rales
+  groupeSanguin         GroupeSanguin?
+  allergies             String?
+  antecedentsMedicaux   String?   @db.Text
+  antecedentsFamiliaux  String?   @db.Text
+  medecinTraitant       String?
+  
+  // Informations oncologiques
+  diagnosticPrincipal   String?
+  dateDecouverteCancer  DateTime?
+  stade                 String?   // TNM staging (ex: T2N1M0)
+  typeHistologique      String?
+  localisationPrimaire  String?
+  
+  // M√©tadonn√©es
+  isArchived            Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  // Relations
+  createdById           String
+  createdBy             User      @relation("PatientCreatedBy", fields: [createdById], references: [id])
+  cabinetId             String
+  cabinet               Cabinet   @relation(fields: [cabinetId], references: [id])
+  
+  consultations         Consultation[]
+  rendezvous            RendezVous[]
+  cures                 Cure[]
+  documents             Document[]
+  factures              Facture[]
+  
+  @@index([nom, prenom])
+  @@index([cin])
+  @@index([telephone])
+  @@index([cabinetId])
+}
+
+model Consultation {
+  id                String   @id @default(cuid())
+  date              DateTime @default(now())
+  
+  // Contenu
+  motif             String?
+  examenClinique    String?  @db.Text
+  conclusion        String?  @db.Text
+  prescriptions     String?  @db.Text
+  
+  // Mesures
+  poids             Float?   // kg
+  taille            Float?   // cm
+  tensionSystolique Int?     // mmHg
+  tensionDiastolique Int?    // mmHg
+  temperature       Float?   // ¬∞C
+  
+  // √âvaluation oncologique
+  ecogStatus        Int?     // 0-5
+  evaluationReponse String?  // RECIST: CR, PR, SD, PD
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id])
+  medecinId         String
+  medecin           User     @relation(fields: [medecinId], references: [id])
+  
+  @@index([patientId])
+  @@index([date])
+}
+
+model RendezVous {
+  id          String    @id @default(cuid())
+  
+  dateHeure   DateTime
+  dureeMinutes Int      @default(30)
+  type        TypeRdv   @default(CONSULTATION_SUIVI)
+  statut      StatutRdv @default(PLANIFIE)
+  
+  motif       String?
+  notes       String?
+  
+  // Rappels
+  rappelEnvoye    Boolean   @default(false)
+  dateRappel      DateTime?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  patientId   String
+  patient     Patient   @relation(fields: [patientId], references: [id])
+  
+  @@index([patientId])
+  @@index([dateHeure])
+  @@index([statut])
+}
+
+model Protocole {
+  id              String   @id @default(cuid())
+  
+  nom             String   // ex: FOLFOX, AC-T, FOLFIRI
+  description     String?  @db.Text
+  nombreCycles    Int      @default(6)
+  intervalleJours Int      @default(21) // jours entre chaque cure
+  
+  // M√©dicaments (JSON pour flexibilit√©)
+  medicaments     Json?    // [{nom, dose, unite, voie, j1, j2...}]
+  
+  actif           Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  cures           Cure[]
+}
+
+model Cure {
+  id              String     @id @default(cuid())
+  
+  numeroCycle     Int        // 1, 2, 3...
+  datePrevue      DateTime
+  dateReelle      DateTime?
+  statut          StatutCure @default(PLANIFIEE)
+  
+  // Ajustements
+  dosePourcent    Int        @default(100) // % de la dose standard
+  motifAjustement String?
+  
+  // Toxicit√©s observ√©es (CTCAE)
+  toxicites       Json?      // [{type, grade, description}]
+  
+  // Biologie pr√©-cure
+  pnn             Float?     // Polynucl√©aires neutrophiles
+  plaquettes      Float?
+  hemoglobine     Float?
+  creatinine      Float?
+  bilirubine      Float?
+  
+  notes           String?    @db.Text
+  
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  // Relations
+  patientId       String
+  patient         Patient    @relation(fields: [patientId], references: [id])
+  protocoleId     String
+  protocole       Protocole  @relation(fields: [protocoleId], references: [id])
+  createdById     String
+  createdBy       User       @relation(fields: [createdById], references: [id])
+  
+  @@index([patientId])
+  @@index([datePrevue])
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  
+  nom         String
+  type        String   // analyse, imagerie, cr_consultation, ordonnance, etc.
+  mimeType    String?
+  taille      Int?     // bytes
+  url         String   // chemin ou URL du fichier
+  
+  description String?
+  dateDocument DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  
+  @@index([patientId])
+  @@index([type])
+}
+
+model Facture {
+  id            String   @id @default(cuid())
+  
+  numero        String   @unique
+  date          DateTime @default(now())
+  
+  // Montants
+  montantHT     Float
+  montantTVA    Float    @default(0)
+  montantTTC    Float
+  montantPaye   Float    @default(0)
+  
+  // Paiement
+  modePaiement  String?  // especes, cheque, carte, virement
+  datePaiement  DateTime?
+  
+  // D√©tails
+  lignes        Json     // [{description, quantite, prixUnitaire, montant}]
+  notes         String?
+  
+  // CNSS / Assurance
+  numeroCNSS    String?
+  mutuelle      String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id])
+  
+  @@index([patientId])
+  @@index([date])
+  @@index([numero])
+}

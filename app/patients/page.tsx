@@ -11,7 +11,8 @@ export const PatientList = ({ onNavigate }: { onNavigate: (path: string) => void
   const [filters, setFilters] = useState({});
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
 
-  const { data: patients = [], isLoading } = usePatients({ q: searchQuery, ...filters });
+  const { data: response, isLoading } = usePatients({ q: searchQuery, ...filters });
+  const patients = response?.data || [];
   const archiveMutation = useArchivePatient();
 
   const handleDelete = (id: string) => {
@@ -44,19 +45,19 @@ export const PatientList = ({ onNavigate }: { onNavigate: (path: string) => void
         </button>
       </div>
 
-      <PatientSearch 
-        onSearch={setSearchQuery} 
-        onFilterChange={setFilters} 
+      <PatientSearch
+        onSearch={setSearchQuery}
+        onFilterChange={setFilters}
       />
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20 bg-white rounded-lg border border-slate-200">
-           <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-           <p className="mt-4 text-slate-500 font-medium">Chargement des patients...</p>
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-slate-500 font-medium">Chargement des patients...</p>
         </div>
       ) : (
-        <PatientTable 
-          patients={patients} 
+        <PatientTable
+          patients={patients}
           onView={(id) => onNavigate(`#/patients/${id}`)}
           onEdit={(id) => onNavigate(`#/patients/${id}/modifier`)}
           onDelete={handleDelete}

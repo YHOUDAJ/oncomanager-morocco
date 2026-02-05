@@ -11,6 +11,7 @@ interface PatientTableProps {
 }
 
 export const PatientTable: React.FC<PatientTableProps> = ({ patients, onView, onEdit, onDelete }) => {
+  // Age is now provided by the API, but we keep this for safety or internal usage if needed
   const calculateAge = (date: string | Date) => {
     const bday = typeof date === 'string' ? parseISO(date) : date;
     return differenceInYears(new Date(), bday);
@@ -49,7 +50,7 @@ export const PatientTable: React.FC<PatientTableProps> = ({ patients, onView, on
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                  {calculateAge(patient.dateNaissance)} ans
+                  {(patient as any).age || calculateAge(patient.dateNaissance)} ans
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                   {patient.telephone}
