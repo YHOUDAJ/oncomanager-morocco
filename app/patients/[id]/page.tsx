@@ -1,10 +1,14 @@
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState, use } from 'react';
 import { usePatient } from '../../../hooks/usePatients';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useRouter } from 'next/navigation';
 
-export const PatientDetails = ({ id, onNavigate }: { id: string, onNavigate: (path: string) => void }) => {
+export default function PatientDetails({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const router = useRouter();
   const { data: patient, isLoading, error } = usePatient(id);
   const [activeTab, setActiveTab] = useState('generale');
 
@@ -40,7 +44,7 @@ export const PatientDetails = ({ id, onNavigate }: { id: string, onNavigate: (pa
           </div>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => onNavigate(`#/patients/${id}/modifier`)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium">Modifier</button>
+          <button onClick={() => router.push(`/patients/${id}/modifier`)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium">Modifier</button>
           <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium shadow-sm">Nouvelle Consultation</button>
         </div>
       </div>
@@ -102,7 +106,7 @@ export const PatientDetails = ({ id, onNavigate }: { id: string, onNavigate: (pa
               <section>
                 <h4 className="text-sm font-bold text-slate-800 mb-3 bg-red-50 p-2 rounded">Informations Oncologiques</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                   <div className="p-4 border rounded-lg">
+                  <div className="p-4 border rounded-lg">
                     <span className="text-xs font-bold text-slate-400 uppercase block mb-1">Diagnostic</span>
                     <p className="font-bold text-red-700">{patient.diagnosticPrincipal || 'Non défini'}</p>
                   </div>
@@ -130,7 +134,7 @@ export const PatientDetails = ({ id, onNavigate }: { id: string, onNavigate: (pa
           )}
 
           {['traitements', 'documents'].includes(activeTab) && (
-             <div className="text-center py-10 text-slate-400 italic">Section en cours de développement</div>
+            <div className="text-center py-10 text-slate-400 italic">Section en cours de développement</div>
           )}
         </div>
       </div>

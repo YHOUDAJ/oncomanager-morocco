@@ -1,15 +1,18 @@
+"use client";
 
 import React from 'react';
 import { PatientForm } from '../../../components/patients/PatientForm';
 import { useCreatePatient } from '../../../hooks/usePatients';
+import { useRouter } from 'next/navigation';
 
-export const CreatePatient = ({ onNavigate }: { onNavigate: (path: string) => void }) => {
+export default function CreatePatient() {
+  const router = useRouter();
   const createMutation = useCreatePatient();
 
   const handleSubmit = async (data: any) => {
     try {
       await createMutation.mutateAsync(data);
-      onNavigate('#/patients');
+      router.push('/patients');
     } catch (error) {
       alert("Erreur lors de la création du patient");
     }
@@ -18,8 +21,8 @@ export const CreatePatient = ({ onNavigate }: { onNavigate: (path: string) => vo
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6 flex items-center gap-4">
-        <button 
-          onClick={() => onNavigate('#/patients')}
+        <button
+          onClick={() => router.push('/patients')}
           className="p-2 hover:bg-slate-200 rounded-full transition-colors"
         >
           <svg className="w-6 h-6 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

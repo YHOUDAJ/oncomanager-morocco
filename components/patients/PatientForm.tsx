@@ -1,3 +1,4 @@
+"use client";
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -63,9 +64,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({ initialData, onSubmit,
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700">Date de Naissance *</label>
-            <input 
-              type="date" 
-              className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 border p-2" 
+            <input
+              type="date"
+              className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 border p-2"
               onChange={(e) => setValue('dateNaissance', new Date(e.target.value))}
             />
             {errors.dateNaissance && <p className="mt-1 text-xs text-red-600">{errors.dateNaissance.message}</p>}

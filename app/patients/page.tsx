@@ -1,3 +1,4 @@
+"use client";
 
 import React, { useState } from 'react';
 import { PatientSearch } from '../../components/patients/PatientSearch';
@@ -5,8 +6,10 @@ import { PatientTable } from '../../components/patients/PatientTable';
 import { DeletePatientDialog } from '../../components/patients/DeletePatientDialog';
 import { usePatients, useArchivePatient } from '../../hooks/usePatients';
 import { Patient } from '../../types';
+import { useRouter } from 'next/navigation';
 
-export const PatientList = ({ onNavigate }: { onNavigate: (path: string) => void }) => {
+export default function PatientList() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({});
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
@@ -35,7 +38,7 @@ export const PatientList = ({ onNavigate }: { onNavigate: (path: string) => void
           <p className="text-slate-500 text-sm">Gérez les dossiers médicaux de votre cabinet</p>
         </div>
         <button
-          onClick={() => onNavigate('#/patients/nouveau')}
+          onClick={() => router.push('/patients/nouveau')}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -58,8 +61,8 @@ export const PatientList = ({ onNavigate }: { onNavigate: (path: string) => void
       ) : (
         <PatientTable
           patients={patients}
-          onView={(id) => onNavigate(`#/patients/${id}`)}
-          onEdit={(id) => onNavigate(`#/patients/${id}/modifier`)}
+          onView={(id) => router.push(`/patients/${id}`)}
+          onEdit={(id) => router.push(`/patients/${id}/modifier`)}
           onDelete={handleDelete}
         />
       )}
