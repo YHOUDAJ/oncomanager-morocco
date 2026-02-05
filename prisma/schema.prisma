@@ -1,5 +1,5 @@
 // prisma/schema.prisma
-// OncoManager Morocco - Schema de base de données
+// OncoManager Morocco - Schema de base de données complet pour SQLite
 
 generator client {
   provider = "prisma-client-js"
@@ -10,56 +10,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============ ENUMS ============
-
-enum Sexe {
-  HOMME
-  FEMME
-}
-
-enum GroupeSanguin {
-  A_POSITIF
-  A_NEGATIF
-  B_POSITIF
-  B_NEGATIF
-  AB_POSITIF
-  AB_NEGATIF
-  O_POSITIF
-  O_NEGATIF
-}
-
-enum Role {
-  MEDECIN
-  SECRETAIRE
-  INFIRMIER
-  ADMIN
-}
-
-enum StatutRdv {
-  PLANIFIE
-  CONFIRME
-  EN_COURS
-  TERMINE
-  ANNULE
-  ABSENT
-}
-
-enum TypeRdv {
-  CONSULTATION_INITIALE
-  CONSULTATION_SUIVI
-  CHIMIO
-  RADIOTHERAPIE
-  BILAN
-  TELECONSULTATION
-}
-
-enum StatutCure {
-  PLANIFIEE
-  EN_COURS
-  TERMINEE
-  REPORTEE
-  ANNULEE
-}
+// ============ ENUMS (Simulés pour SQLite) ============
+// Note: SQLite ne supporte pas les ENUM nativement au niveau de la DB, 
+// Prisma gère cela au niveau applicatif.
 
 // ============ MODELS ============
 
@@ -84,7 +37,7 @@ model User {
   email         String   @unique
   nom           String
   prenom        String
-  role          Role     @default(MEDECIN)
+  role          String   @default("MEDECIN") // MEDECIN, SECRETAIRE, INFIRMIER, ADMIN
   passwordHash  String
   
   createdAt     DateTime @default(now())
@@ -106,7 +59,7 @@ model Patient {
   nom                   String
   prenom                String
   dateNaissance         DateTime
-  sexe                  Sexe
+  sexe                  String    // HOMME, FEMME
   cin                   String?   @unique
   
   // Contact
@@ -122,10 +75,10 @@ model Patient {
   numeroMutuelle        String?
   
   // Informations médicales générales
-  groupeSanguin         GroupeSanguin?
+  groupeSanguin         String?   // A_POSITIF, A_NEGATIF, etc.
   allergies             String?
-  antecedentsMedicaux   String?   @db.Text
-  antecedentsFamiliaux  String?   @db.Text
+  antecedentsMedicaux   String?
+  antecedentsFamiliaux  String?
   medecinTraitant       String?
   
   // Informations oncologiques
@@ -151,11 +104,6 @@ model Patient {
   cures                 Cure[]
   documents             Document[]
   factures              Facture[]
-  
-  @@index([nom, prenom])
-  @@index([cin])
-  @@index([telephone])
-  @@index([cabinetId])
 }
 
 model Consultation {
@@ -164,16 +112,17 @@ model Consultation {
   
   // Contenu
   motif             String?
-  examenClinique    String?  @db.Text
-  conclusion        String?  @db.Text
-  prescriptions     String?  @db.Text
+  examenClinique    String?
+  conclusion        String?
+  prescriptions     String?
   
-  // Mesures
+  // Mesures vitales
   poids             Float?   // kg
   taille            Float?   // cm
   tensionSystolique Int?     // mmHg
   tensionDiastolique Int?    // mmHg
   temperature       Float?   // °C
+  frequenceCardiaque Int?    // bpm
   
   // Évaluation oncologique
   ecogStatus        Int?     // 0-5
@@ -187,9 +136,6 @@ model Consultation {
   patient           Patient  @relation(fields: [patientId], references: [id])
   medecinId         String
   medecin           User     @relation(fields: [medecinId], references: [id])
-  
-  @@index([patientId])
-  @@index([date])
 }
 
 model RendezVous {
@@ -197,8 +143,8 @@ model RendezVous {
   
   dateHeure   DateTime
   dureeMinutes Int      @default(30)
-  type        TypeRdv   @default(CONSULTATION_SUIVI)
-  statut      StatutRdv @default(PLANIFIE)
+  type        String    @default("CONSULTATION_SUIVI") // CONSULTATION_INITIALE, CHIMIO, RADIOTHERAPIE, etc.
+  statut      String    @default("PLANIFIE") // PLANIFIE, CONFIRME, EN_COURS, TERMINE, ANNULE, ABSENT
   
   motif       String?
   notes       String?
@@ -213,25 +159,21 @@ model RendezVous {
   // Relations
   patientId   String
   patient     Patient   @relation(fields: [patientId], references: [id])
-  
-  @@index([patientId])
-  @@index([dateHeure])
-  @@index([statut])
 }
 
 model Protocole {
   id              String   @id @default(cuid())
   
   nom             String   // ex: FOLFOX, AC-T, FOLFIRI
-  description     String?  @db.Text
+  description     String?
   nombreCycles    Int      @default(6)
   intervalleJours Int      @default(21) // jours entre chaque cure
   
   // Médicaments (JSON pour flexibilité)
-  medicaments     Json?    // [{nom, dose, unite, voie, j1, j2...}]
+  medicaments     String?  // Stocké sous forme de JSON String pour SQLite
   
   actif           Boolean  @default(true)
-  createdAt       DateTime @default(now())
+  createdAt       DateTime @now()
   updatedAt       DateTime @updatedAt
   
   // Relations
@@ -244,14 +186,14 @@ model Cure {
   numeroCycle     Int        // 1, 2, 3...
   datePrevue      DateTime
   dateReelle      DateTime?
-  statut          StatutCure @default(PLANIFIEE)
+  statut          String     @default("PLANIFIEE") // PLANIFIEE, EN_COURS, TERMINEE, REPORTEE, ANNULEE
   
   // Ajustements
   dosePourcent    Int        @default(100) // % de la dose standard
   motifAjustement String?
   
   // Toxicités observées (CTCAE)
-  toxicites       Json?      // [{type, grade, description}]
+  toxicites       String?    // Stocké sous forme de JSON String
   
   // Biologie pré-cure
   pnn             Float?     // Polynucléaires neutrophiles
@@ -260,7 +202,7 @@ model Cure {
   creatinine      Float?
   bilirubine      Float?
   
-  notes           String?    @db.Text
+  notes           String?
   
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
@@ -272,9 +214,6 @@ model Cure {
   protocole       Protocole  @relation(fields: [protocoleId], references: [id])
   createdById     String
   createdBy       User       @relation(fields: [createdById], references: [id])
-  
-  @@index([patientId])
-  @@index([datePrevue])
 }
 
 model Document {
@@ -294,9 +233,6 @@ model Document {
   // Relations
   patientId   String
   patient     Patient  @relation(fields: [patientId], references: [id])
-  
-  @@index([patientId])
-  @@index([type])
 }
 
 model Facture {
@@ -316,7 +252,7 @@ model Facture {
   datePaiement  DateTime?
   
   // Détails
-  lignes        Json     // [{description, quantite, prixUnitaire, montant}]
+  lignes        String   // Stocké sous forme de JSON String
   notes         String?
   
   // CNSS / Assurance
@@ -328,9 +264,5 @@ model Facture {
   
   // Relations
   patientId     String
-  patient       Patient  @relation(fields: [patientId], references: [id])
-  
-  @@index([patientId])
-  @@index([date])
-  @@index([numero])
+  patient     Patient  @relation(fields: [patientId], references: [id])
 }
