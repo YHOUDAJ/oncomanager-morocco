@@ -173,7 +173,7 @@ model Protocole {
   medicaments     String?  // Stocké sous forme de JSON String pour SQLite
   
   actif           Boolean  @default(true)
-  createdAt       DateTime @now()
+  createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
   // Relations
